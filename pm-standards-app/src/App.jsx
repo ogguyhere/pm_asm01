@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, BookOpen, GitCompare, BarChart3, Bookmark, Home, ChevronRight, CheckCircle, XCircle, AlertCircle, Palette, Sun, Moon, ExternalLink } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Search, BookOpen, GitCompare, BarChart3, Bookmark, Home, ChevronRight, CheckCircle, XCircle, AlertCircle, Palette, Sun, Moon, ExternalLink, Settings, Zap } from 'lucide-react';
+import Chart from 'chart.js/auto';
 
 const themes = {
   blue: {
@@ -120,6 +121,7 @@ const themes = {
     cardHover: "hover:shadow-rose-500/60 hover:scale-105 transition-all duration-300"
   }
 };
+
 const standardsData = {
   pmbok: {
     name: "PMBOK 7th Edition",
@@ -860,11 +862,78 @@ const comparisonData = [
   }
 ];
 
+const scenariosData = {
+  'high-uncertainty-tech': {
+    name: "High-Uncertainty Tech Startup Project",
+    description: "A fast-paced software development project with high ambiguity, small team, and rapid iterations.",
+    recommendations: {
+      pmbok: [
+        { process: "Adopt Adaptive Life Cycles", evidence: "Use hybrid approaches with progressive elaboration in Planning Domain (pages 70-75). Evidence: Reduces risk in uncertain environments by allowing flexibility.", sectionId: "plans-planning" },
+        { process: "Emphasize Uncertainty Management", evidence: "Integrate ambiguity models like scenario planning (pages 140-145). Evidence: Builds resilience for tech volatility.", sectionId: "risk-uncertainty-management" },
+        { process: "Stakeholder Collaboration", evidence: "Servant leadership for agile teams (pages 25-28). Evidence: Enhances engagement in dynamic settings.", sectionId: "stakeholder-management" }
+      ],
+      prince2: [
+        { process: "Tailor to Suit Context", evidence: "Adapt principles for agile environments with tolerances (pages 29-30). Evidence: Allows controlled flexibility without losing governance.", sectionId: "tailoring" },
+        { process: "Manage by Exception", evidence: "Tolerance-based escalations for rapid changes (pages 30-35). Evidence: Efficient for startups by minimizing oversight.", sectionId: "integration-management" },
+        { process: "Risk Practice Integration", evidence: "Symmetric threat/opportunity responses (pages 160-165). Evidence: Balances innovation risks.", sectionId: "risk-uncertainty-management" }
+      ],
+      iso: [
+        { process: "Contextual Tailoring", evidence: "Adapt practices to project complexity (pages 16-17). Evidence: Ensures scalability for small, high-risk projects.", sectionId: "tailoring" },
+        { process: "Risk Treatment Processes", evidence: "Identify and treat risks iteratively (Clause 4.3.31-34). Evidence: Provides neutral framework for uncertainty.", sectionId: "risk-uncertainty-management" },
+        { process: "Integrated Governance", evidence: "Use Clause 4.6 for lightweight approaches (pages 10-15). Evidence: Harmonizes with agile without rigidity.", sectionId: "integration-management" }
+      ]
+    }
+  },
+  'large-construction': {
+    name: "Large-Scale Construction Project",
+    description: "A multi-year infrastructure project with fixed scope, regulatory constraints, and large teams.",
+    recommendations: {
+      pmbok: [
+        { process: "Predictive Life Cycles", evidence: "Detailed planning and WBS for scope control (pages 110-115). Evidence: Ensures compliance in regulated industries.", sectionId: "scope-management" },
+        { process: "Resource Optimization", evidence: "Tuckman model for large team development (pages 40-45). Evidence: Manages diverse stakeholders effectively.", sectionId: "resource-team-management" },
+        { process: "Sustainability Integration", evidence: "ESG in value domain for long-term viability (pages 59-74). Evidence: Aligns with environmental regulations.", sectionId: "sustainability" }
+      ],
+      prince2: [
+        { process: "Stage-Based Control", evidence: "Use tolerances for cost/schedule in large stages (pages 185-211). Evidence: Provides governance for complex deliveries.", sectionId: "progress-monitoring" },
+        { process: "Product-Based Planning", evidence: "PBS for scope definition (pages 97-125). Evidence: Prevents creep in fixed-scope projects.", sectionId: "scope-management" },
+        { process: "Business Case Maintenance", evidence: "Ongoing justification with tolerances (pages 55-72). Evidence: Tracks ROI in capital-intensive work.", sectionId: "business-case" }
+      ],
+      iso: [
+        { process: "Sequential Processes", evidence: "WBS and activity definition (Clause 4.3.12-13). Evidence: Standardizes for large-scale compliance.", sectionId: "scope-management" },
+        { process: "Procurement Planning", evidence: "Supplier selection in regulated contexts (Clause 4.3.36). Evidence: Ensures ethical sourcing.", sectionId: "procurement-management" },
+        { process: "Benefit Monitoring", evidence: "Post-project sustainment (pages 28-29). Evidence: Focuses on long-term infrastructure value.", sectionId: "benefits-management" }
+      ]
+    }
+  },
+  'agile-hybrid': {
+    name: "Hybrid Agile-Waterfall Product Launch",
+    description: "A marketing campaign with upfront planning and iterative execution phases.",
+    recommendations: {
+      pmbok: [
+        { process: "Hybrid Life Cycle Tailoring", evidence: "Blend predictive and adaptive in Planning (pages 70-75). Evidence: Balances structure with flexibility for launches.", sectionId: "plans-planning" },
+        { process: "Change Resilience", evidence: "Kotter's model for cultural shifts (pages 145-150). Evidence: Manages mid-project pivots.", sectionId: "change-management" },
+        { process: "Communication Models", evidence: "7 Cs with sentiment analysis (pages 45-50). Evidence: Enhances stakeholder buy-in.", sectionId: "communication-management" }
+      ],
+      prince2: [
+        { process: "Tailored Processes", evidence: "Adapt for hybrid with stage boundaries (pages 29-30). Evidence: Maintains control in mixed approaches.", sectionId: "tailoring" },
+        { process: "Progress Tolerances", evidence: "Checkpoint reports for iterations (pages 140-145). Evidence: Tracks hybrid progress efficiently.", sectionId: "progress-monitoring" },
+        { process: "Lessons from Experience", evidence: "Embed in boundaries (pages 22-23). Evidence: Captures hybrid learnings.", sectionId: "lessons-learned-management" }
+      ],
+      iso: [
+        { process: "Tailoring Considerations", evidence: "Adapt to hybrid contexts (pages 16-17). Evidence: Provides neutral scaling.", sectionId: "tailoring" },
+        { process: "Schedule Control", evidence: "Develop and control hybrid schedules (Clause 4.3.23-24). Evidence: Integrates phases seamlessly.", sectionId: "schedule-management" },
+        { process: "Stakeholder Management", evidence: "Ongoing engagement (Clause 4.3.10). Evidence: Supports iterative feedback.", sectionId: "stakeholder-management" }
+      ]
+    }
+  }
+};
+
 const App = () => {
   const [currentPage, setCurrentPage] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStandard, setSelectedStandard] = useState('pmbok');
   const [selectedTopic, setSelectedTopic] = useState(0);
+  const [selectedScenario, setSelectedScenario] = useState('high-uncertainty-tech');
   const [bookmarks, setBookmarks] = useState([]);
   const [currentTheme, setCurrentTheme] = useState('blue');
   const [showThemeSelector, setShowThemeSelector] = useState(false);
@@ -963,6 +1032,11 @@ const App = () => {
     navigateToSection(standardKey);
   };
 
+  const handleRecommendationClick = (standardKey, sectionId) => {
+    navigateToSection(standardKey);
+    // Scroll to specific section in library
+  };
+
   const searchResults = useMemo(() => {
     if (!searchQuery) return [];
     const query = searchQuery.toLowerCase();
@@ -979,11 +1053,13 @@ const App = () => {
     return results;
   }, [searchQuery]);
 
+  const scenario = scenariosData[selectedScenario];
+
   const HomePage = () => (
     <div className="space-y-8">
       <div className={`text-center py-12 bg-gradient-to-r ${theme.gradient} text-white rounded-lg shadow-xl`}>
         <h1 className="text-5xl font-bold mb-4">PM Standards Hub</h1>
-        <p className="text-xl mb-6">Compare PMBOK, PRINCE2, and ISO 21500/21502</p>
+        <p className="text-xl mb-6">Compare PMBOK, PRINCE2, and ISO 21500/21502 | Generate Tailored Processes</p>
         <div className="flex gap-4 justify-center flex-wrap">
           <button
             onClick={() => setCurrentPage('library')}
@@ -996,6 +1072,12 @@ const App = () => {
             className="bg-gray-800 bg-opacity-30 backdrop-blur text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-40 transition-all"
           >
             Compare Now
+          </button>
+          <button
+            onClick={() => setCurrentPage('tailor')}
+            className="bg-yellow-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-all shadow-lg"
+          >
+            Tailor Processes
           </button>
         </div>
       </div>
@@ -1011,10 +1093,10 @@ const App = () => {
           <h3 className={`text-xl font-bold mb-2 ${textColor}`}>Comparison Engine</h3>
           <p className={secondaryText}>Side-by-side topic comparisons with detailed insights.</p>
         </div>
-        <div className={`${cardBg} p-6 rounded-lg shadow-lg border-t-4 border-green-500 transform hover:scale-105 transition-transform`}>
-          <BarChart3 className="w-12 h-12 text-green-500 mb-4" />
-          <h3 className={`text-xl font-bold mb-2 ${textColor}`}>Insights Dashboard</h3>
-          <p className={secondaryText}>Visual analytics and coverage matrix.</p>
+        <div className={`${cardBg} p-6 rounded-lg shadow-lg border-t-4 border-yellow-500 transform hover:scale-105 transition-transform`}>
+          <Zap className="w-12 h-12 text-yellow-500 mb-4" />
+          <h3 className={`text-xl font-bold mb-2 ${textColor}`}>Tailored Processes</h3>
+          <p className={secondaryText}>Generate evidence-based recommendations for your project scenario.</p>
         </div>
       </div>
 
@@ -1053,12 +1135,22 @@ const App = () => {
 
           <div className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-500" />
-            <span className={`font-semibold ${textColor}`}>4.0 Insights Dashboard</span>
+            <span className={`font-semibold ${textColor}`}>4.0 Tailoring Engine</span>
           </div>
           <div className={`ml-8 space-y-2 ${secondaryText}`}>
-            <div>4.1 Analytics Engine</div>
-            <div>4.2 Visualization Components</div>
-            <div>4.3 Summary Reports</div>
+            <div>4.1 Scenario Selection</div>
+            <div>4.2 Evidence-Based Recommendations</div>
+            <div>4.3 Process Generation</div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <span className={`font-semibold ${textColor}`}>5.0 Insights Dashboard</span>
+          </div>
+          <div className={`ml-8 space-y-2 ${secondaryText}`}>
+            <div>5.1 Analytics Engine</div>
+            <div>5.2 Visualization Components</div>
+            <div>5.3 Summary Reports</div>
           </div>
         </div>
       </div>
@@ -1172,6 +1264,58 @@ const App = () => {
       </div>
     );
   };
+
+  const TailorPage = () => (
+    <div className="space-y-6">
+      <div className={`${cardBg} p-6 rounded-lg shadow-lg`}>
+        <h2 className={`text-2xl font-bold mb-4 ${textColor}`}>Tailored Project Processes</h2>
+        <p className={secondaryText}>Select a scenario to generate evidence-based recommendations from the standards.</p>
+
+        <div className="mb-6">
+          <label className={`block text-sm font-semibold mb-2 ${textColor}`}>Select Scenario:</label>
+          <select
+            value={selectedScenario}
+            onChange={(e) => setSelectedScenario(e.target.value)}
+            className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+          >
+            {Object.entries(scenariosData).map(([key, data]) => (
+              <option key={key} value={key}>{data.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className={`${cardBg} p-4 rounded-lg mb-6 ${secondaryText}`}>
+          <strong>Scenario Description:</strong> {scenario.description}
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {['pmbok', 'prince2', 'iso'].map((stdKey) => {
+            const stdName = standardsData[stdKey].name;
+            const recs = scenario.recommendations[stdKey];
+            return (
+              <div key={stdKey} className={`p-4 rounded-lg ${theme.accent} border-l-4 ${theme.border}`}>
+                <h3 className={`text-xl font-bold mb-4 ${theme.text}`}>{stdName}</h3>
+                <div className="space-y-3">
+                  {recs.map((rec, idx) => (
+                    <div key={idx} className={`p-3 rounded ${isDarkMode ? 'bg-gray-700' : 'bg-white'} shadow-sm`}>
+                      <h4 className={`font-semibold ${textColor}`}>{rec.process}</h4>
+                      <p className={secondaryText}>{rec.evidence}</p>
+                      <button
+                        onClick={() => handleRecommendationClick(stdKey, rec.sectionId)}
+                        className={`mt-2 text-sm ${theme.text} hover:underline flex items-center gap-1`}
+                      >
+                        View Evidence <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 
   const BookmarksPage = () => (
     <div className="space-y-6">
@@ -1415,6 +1559,7 @@ const App = () => {
   };
 
   const DashboardPage = () => {
+    const chartRef = useRef(null);
     const similarities = [
       {
         number: 1,
@@ -1718,18 +1863,88 @@ const App = () => {
       similarities: similarities.length,
       differences: detailedDifferences.length,
       uniquePoints: uniquePMBOK.length + uniquePRINCE2.length + uniqueISO.length,
-      bookmarked: bookmarks.length
+      bookmarked: bookmarks.length,
+      scenarios: Object.keys(scenariosData).length
     };
 
     const [activeCategory, setActiveCategory] = useState('similarities');
+
+    useEffect(() => {
+      let chartInstance = null;
+
+      if (chartRef.current) {
+        const ctx = chartRef.current.getContext('2d');
+        chartInstance = new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: ['Integration', 'Stakeholder', 'Scope', 'Schedule', 'Cost', 'Quality', 'Resources', 'Communication', 'Risk', 'Procurement'],
+            datasets: [
+              {
+                label: 'PMBOK Coverage',
+                data: [9, 8, 9, 8, 9, 8, 9, 8, 10, 9],
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderWidth: 2,
+              },
+              {
+                label: 'PRINCE2 Coverage',
+                data: [8, 9, 8, 9, 8, 9, 8, 9, 8, 8],
+                borderColor: 'rgb(168, 85, 247)',
+                backgroundColor: 'rgba(168, 85, 247, 0.2)',
+                borderWidth: 2,
+              },
+              {
+                label: 'ISO Coverage',
+                data: [7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+                borderColor: 'rgb(34, 197, 94)',
+                backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                borderWidth: 2,
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              r: {
+                beginAtZero: true,
+                max: 10,
+                ticks: {
+                  stepSize: 2,
+                },
+                pointLabels: {
+                  font: {
+                    size: 12
+                  }
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+              },
+              title: {
+                display: true,
+                text: 'Standards Coverage Map: Key PM Topics'
+              }
+            }
+          }
+        });
+      }
+
+      return () => {
+        if (chartInstance) {
+          chartInstance.destroy();
+        }
+      };
+    }, []);
 
     return (
       <div className="space-y-6">
         <div className={`${cardBg} p-6 rounded-lg shadow-lg`}>
           <h2 className={`text-3xl font-bold mb-2 ${textColor}`}>Insights Dashboard</h2>
-          <p className={secondaryText}>Comparative analysis of PMBOK 7, PRINCE2, and ISO 21500/21502</p>
+          <p className={secondaryText}>Comparative analysis of PMBOK 7, PRINCE2, and ISO 21500/21502 | {stats.scenarios} Tailoring Scenarios</p>
 
-          <div className="grid md:grid-cols-3 gap-4 my-8">
+          <div className="grid md:grid-cols-4 gap-4 my-8">
             <button
               onClick={() => setActiveCategory('similarities')}
               className={`p-6 rounded-lg shadow-lg transition-all transform hover:scale-105 ${activeCategory === 'similarities'
@@ -1752,7 +1967,7 @@ const App = () => {
             >
               <AlertCircle className={`w-12 h-12 mx-auto mb-3 ${activeCategory === 'differences' ? 'text-yellow-500' : 'text-gray-400'}`} />
               <div className={`text-4xl font-bold mb-2 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>{stats.differences}</div>
-              <div className={`text-lg font-semibold ${textColor}`}>Differences</div>
+              <div className={`text-lg font-semibold ${textColor}`}>Differences</div>Huse
               <div className={`text-sm ${secondaryText}`}>Unique Terminologies & Methodologies</div>
             </button>
 
@@ -1767,6 +1982,19 @@ const App = () => {
               <div className={`text-4xl font-bold mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{stats.uniquePoints}</div>
               <div className={`text-lg font-semibold ${textColor}`}>Unique Points</div>
               <div className={`text-sm ${secondaryText}`}>Standard-Specific Features</div>
+            </button>
+
+            <button
+              onClick={() => setActiveCategory('scenarios')}
+              className={`p-6 rounded-lg shadow-lg transition-all transform hover:scale-105 ${activeCategory === 'scenarios'
+                ? `${isDarkMode ? 'bg-purple-900 bg-opacity-50 border-2 border-purple-500' : 'bg-purple-100 border-2 border-purple-500'}`
+                : `${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`
+                }`}
+            >
+              <Zap className={`w-12 h-12 mx-auto mb-3 ${activeCategory === 'scenarios' ? 'text-purple-500' : 'text-gray-400'}`} />
+              <div className={`text-4xl font-bold mb-2 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>{stats.scenarios}</div>
+              <div className={`text-lg font-semibold ${textColor}`}>Scenarios</div>
+              <div className={`text-sm ${secondaryText}`}>Tailored Recommendations</div>
             </button>
           </div>
 
@@ -1849,6 +2077,17 @@ const App = () => {
                 These are distinctive features, tools, or approaches that are exclusive to each standard, representing their unique value propositions.
               </p>
 
+              {/* Visual Map: Radar Chart for Standards Coverage */}
+              <div className={`p-6 rounded-lg ${cardBg} mb-8`}>
+                <h4 className={`text-xl font-bold mb-4 ${textColor}`}>Visual Coverage Map: Standards vs. Key PM Topics</h4>
+                <div className="relative h-96">
+                  <canvas ref={chartRef} style={{ width: '100%', height: '400px' }}></canvas> {/* Fixed height here */}
+                </div>
+                <p className={`mt-4 text-sm ${secondaryText}`}>
+                  Radar map visualizing the depth of coverage (1-10 scale) across core project management topics for each standard. Higher values indicate more detailed guidance.
+                </p>
+              </div>
+
               <div className="mb-8">
                 <h4 className={`text-xl font-bold mb-4 ${textColor}`}>PMBOK 7th Edition Unique Points</h4>
                 {uniquePMBOK.map((point, idx) => (
@@ -1884,9 +2123,30 @@ const App = () => {
             </div>
           )}
 
+          {activeCategory === 'scenarios' && (
+            <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-purple-900 bg-opacity-20' : 'bg-purple-50'} border-l-4 border-purple-500`}>
+              <h3 className={`text-2xl font-bold mb-4 flex items-center gap-2 ${textColor}`}>
+                <Zap className="w-7 h-7 text-purple-500" />
+                Tailoring Scenarios: Evidence-Based Recommendations
+              </h3>
+              <p className={`mb-6 ${secondaryText}`}>
+                Predefined scenarios with tailored processes drawn directly from standard sections, ensuring recommendations are grounded in authoritative guidance.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                {Object.entries(scenariosData).map(([key, data]) => (
+                  <div key={key} className={`p-4 rounded-lg ${cardBg} border cursor-pointer hover:${theme.cardHover}`} onClick={() => { setSelectedScenario(key); setCurrentPage('tailor'); }}>
+                    <h4 className={`font-bold mb-2 ${textColor}`}>{data.name}</h4>
+                    <p className={secondaryText}>{data.description}</p>
+                    <button className={`mt-2 text-sm ${theme.text} hover:underline`}>Generate Recommendations</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className={`mt-8 p-6 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
             <h3 className={`text-xl font-bold mb-4 ${textColor}`}>Quick Stats</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center">
                 <div className={`text-2xl font-bold ${textColor}`}>{stats.totalTopics}</div>
                 <div className={`text-sm ${secondaryText}`}>Topics Analyzed</div>
@@ -1902,6 +2162,10 @@ const App = () => {
               <div className="text-center">
                 <div className={`text-2xl font-bold ${textColor}`}>{stats.uniquePoints}</div>
                 <div className={`text-sm ${secondaryText}`}>Exclusive Features</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${textColor}`}>{stats.scenarios}</div>
+                <div className={`text-sm ${secondaryText}`}>Tailoring Scenarios</div>
               </div>
             </div>
           </div>
@@ -1964,7 +2228,8 @@ const App = () => {
             <div className="flex gap-2 items-center flex-wrap">
               <button
                 onClick={() => setCurrentPage('home')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'home' ? `${theme.primaryBtn} text-white shadow-lg` : `${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'home' ? `${theme.primaryBtn} text-white shadow-lg` : `${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-white hover:bg-gray-600'}`
+
                   }`}
               >
                 <Home className="w-5 h-5" />
@@ -1972,7 +2237,7 @@ const App = () => {
               </button>
               <button
                 onClick={() => setCurrentPage('library')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'library' ? `${theme.primaryBtn} text-white shadow-lg` : `${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'library' ? `${theme.primaryBtn} text-white shadow-lg` :`${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-white hover:bg-gray-600'}`
                   }`}
               >
                 <BookOpen className="w-5 h-5" />
@@ -1980,15 +2245,23 @@ const App = () => {
               </button>
               <button
                 onClick={() => setCurrentPage('compare')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'compare' ? `${theme.primaryBtn} text-white shadow-lg` : `${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'compare' ? `${theme.primaryBtn} text-white shadow-lg`:`${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-white hover:bg-gray-600'}`
                   }`}
               >
                 <GitCompare className="w-5 h-5" />
                 <span className="hidden sm:inline">Compare</span>
               </button>
               <button
+                onClick={() => setCurrentPage('tailor')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'tailor' ? `${theme.primaryBtn} text-white shadow-lg` :`${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-white hover:bg-gray-600'}`
+                  }`}
+              >
+                <Zap className="w-5 h-5" />
+                <span className="hidden sm:inline">Tailor</span>
+              </button>
+              <button
                 onClick={() => setCurrentPage('dashboard')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'dashboard' ? `${theme.primaryBtn} text-white shadow-lg` : `${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'dashboard' ? `${theme.primaryBtn} text-white shadow-lg` :`${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-white hover:bg-gray-600'}`
                   }`}
               >
                 <BarChart3 className="w-5 h-5" />
@@ -1996,7 +2269,7 @@ const App = () => {
               </button>
               <button
                 onClick={() => setCurrentPage('bookmarks')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'bookmarks' ? `${theme.primaryBtn} text-white shadow-lg` : `${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === 'bookmarks' ? `${theme.primaryBtn} text-white shadow-lg`:`${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-white hover:bg-gray-600'}`
                   }`}
               >
                 <Bookmark className="w-5 h-5" />
@@ -2006,7 +2279,7 @@ const App = () => {
               <div className="relative">
                 <button
                   onClick={() => setShowThemeSelector(!showThemeSelector)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all $ ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-white hover:bg-gray-600'}`}
                 >
                   <Palette className="w-5 h-5" />
                 </button>
@@ -2048,6 +2321,7 @@ const App = () => {
         {currentPage === 'home' && <HomePage />}
         {currentPage === 'library' && <LibraryPage />}
         {currentPage === 'compare' && <ComparePage />}
+        {currentPage === 'tailor' && <TailorPage />}
         {currentPage === 'dashboard' && <DashboardPage />}
         {currentPage === 'bookmarks' && <BookmarksPage />}
       </main>
